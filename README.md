@@ -8,16 +8,33 @@ The project uses ES6 modules (`<script type="module">`) for JavaScript. Because 
 
 To test the site locally, you need to serve it using a local HTTP server.
 
-### Running a local server (macOS / Linux)
+### Running a local server
 
-Since macOS and Linux typically come with Python pre-installed, you can easily use its built-in static server.
+You can use the helper Bash scripts to start and stop the local web server:
 
-1. Open your terminal.
-2. Navigate to this project folder.
-3. Run the following command:
+**Start the server:**
+```bash
+./start_server.sh [port]   # Defaults to port 8080 if not specified
+```
 
+**Stop the server:**
+```bash
+./stop_server.sh [port]    # Defaults to port 8080 if not specified
+```
+
+Alternatively, you can manually run Python's built-in HTTP server:
 ```bash
 python3 -m http.server 8080
 ```
 
-4. Open your web browser and go to: [http://localhost:8080](http://localhost:8080)
+Once started, open your web browser and go to: [http://localhost:8080](http://localhost:8080)
+
+### Updating the Dataset
+
+If you modify or replace `assets/ICARusPox_web_resource_table.tsv`, recompile `js/dataset.js` by running:
+
+```bash
+./update_dataset.sh [path_to_tsv]   # Defaults to assets/ICARusPox_web_resource_table.tsv
+```
+
+

@@ -30,3 +30,8 @@ Temporary Items
 .vscode/
 *.swp
 *.swo
+
+# Local server files
+.server.pid
+server.log
+

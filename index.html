@@ -19,22 +19,30 @@
     <header>
         <div class="brand">
             <h1>ICARusPox</h1>
-            <span>Genome-wide Vaccinia Virus High-Content Imaging Screen V1.0 <br>(Refined with Interactome-Corrected Analysis of RNAi)</span>
+            <span>Genome-wide Vaccinia Virus High-Content Imaging Screen V1.0 <br>(Refined with Interactome-Corrected
+                Analysis of RNAi)</span>
         </div>
         <div class="stats">
-            <div class="stat-item"><span class="stat-label">Total Genes</span><span class="stat-value" id="stat-total">0</span></div>
-            <div class="stat-item"><span class="stat-label">Early Pro (E ↑)</span><span class="stat-value early-pro" id="stat-early-pro">0</span></div>
-            <div class="stat-item"><span class="stat-label">Early Anti (E ↓)</span><span class="stat-value early-anti" id="stat-early-anti">0</span></div>
-            <div class="stat-item"><span class="stat-label">Late Pro (L ↑)</span><span class="stat-value late-pro" id="stat-late-pro">0</span></div>
-            <div class="stat-item"><span class="stat-label">Late Anti (L ↓)</span><span class="stat-value late-anti" id="stat-late-anti">0</span></div>
+            <div class="stat-item"><span class="stat-label">Total Genes</span><span class="stat-value"
+                    id="stat-total">0</span></div>
+            <div class="stat-item"><span class="stat-label">Early Pro (E ↑)</span><span class="stat-value early-pro"
+                    id="stat-early-pro">0</span></div>
+            <div class="stat-item"><span class="stat-label">Early Anti (E ↓)</span><span class="stat-value early-anti"
+                    id="stat-early-anti">0</span></div>
+            <div class="stat-item"><span class="stat-label">Late Pro (L ↑)</span><span class="stat-value late-pro"
+                    id="stat-late-pro">0</span></div>
+            <div class="stat-item"><span class="stat-label">Late Anti (L ↓)</span><span class="stat-value late-anti"
+                    id="stat-late-anti">0</span></div>
         </div>
     </header>
 
     <div class="controls">
-        <a href="assets/ICARusPox_web_resource_table.tsv" download="ICARusPox_web_resource_table.tsv" class="btn-download" title="Download full TSV dataset">
+        <a href="assets/ICARusPox_web_resource_table.tsv" download="ICARusPox_web_resource_table.tsv"
+            class="btn-download" title="Download full TSV dataset">
             &#8595; Download TSV
         </a>
-        <button id="btnExportSVG" class="btn-export" title="Export current dashboard view as publication-ready vector SVG">
+        <button id="btnExportSVG" class="btn-export"
+            title="Export current dashboard view as publication-ready vector SVG">
             &#127912; Export SVG
         </button>
         <select id="refinementFilter" title="Toggle Refined vs Unrefined intensities">
@@ -94,29 +102,137 @@
             </div>
         </div>
 
-        <div class="chart-section">
-            <div class="chart-card">
-                <h3>Early Intensities</h3>
-                <div class="canvas-wrapper">
-                    <canvas id="earlyPlot"></canvas>
+        <div class="right-panel">
+            <div class="panel-tabs">
+                <button class="tab-btn active" data-tab="tab-screen">Screen Readout</button>
+                <button class="tab-btn" data-tab="tab-chat">Agent Chat</button>
+                <button class="tab-btn" data-tab="tab-sandbox">Code Sandbox</button>
+            </div>
+
+            <!-- Tab 1: Screen Readout (Graphs) -->
+            <div id="tab-screen" class="tab-content active">
+                <div class="chart-section">
+                    <div class="chart-card">
+                        <h3>Early Intensities</h3>
+                        <div class="canvas-wrapper">
+                            <canvas id="earlyPlot"></canvas>
+                        </div>
+                    </div>
+                    <div class="chart-card">
+                        <h3>Late Intensities</h3>
+                        <div class="canvas-wrapper">
+                            <canvas id="latePlot"></canvas>
+                        </div>
+                    </div>
                 </div>
             </div>
-            <div class="chart-card">
-                <h3>Late Intensities</h3>
-                <div class="canvas-wrapper">
-                    <canvas id="latePlot"></canvas>
+
+            <!-- Tab 2: Agent Chat Interface -->
+            <div id="tab-chat" class="tab-content">
+                <div class="agent-container">
+                    <!-- Compact Provider Bar -->
+                    <div class="agent-provider-card">
+                        <div class="provider-row">
+                            <div class="form-group">
+                                <label for="providerSelect">Model Service Provider:</label>
+                                <select id="providerSelect">
+                                    <option value="gemini">✨ Google Gemini</option>
+                                    <option value="openai">🤖 OpenAI ChatGPT</option>
+                                    <option value="claude">🧠 Anthropic Claude</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="modelSelect">Model Provider Interface:</label>
+                                <select id="modelSelect">
+                                    <!-- Populated dynamically based on providerSelect -->
+                                </select>
+                            </div>
+
+                            <div class="form-group flex-1">
+                                <label for="providerApiKey">API Secret Token / Key:</label>
+                                <input type="password" id="providerApiKey" placeholder="Enter API Key..."
+                                    autocomplete="off">
+                            </div>
+
+                            <div class="form-group btn-group">
+                                <label>&nbsp;</label>
+                                <button id="btnSaveAgentConfig" class="btn-save-agent">Save Parameters</button>
+                            </div>
+                        </div>
+                        <div id="agentSaveStatus" class="save-status"></div>
+                    </div>
+
+                    <!-- Chat Interface Window -->
+                    <div class="chat-interface">
+                        <div id="chatHistory" class="chat-history">
+                            <div class="chat-message agent-msg">
+                                <div class="msg-header">🤖 BioData Analyst Agent</div>
+                                <div class="msg-body">
+                                    Hello! I am your <strong>Bioinformatics Data Analyst Agent</strong>. Ask me to
+                                    prioritize hits, analyze pathways, compute Z-scores, or summarize host-pathogen
+                                    interactions for the 17,672 human gene screen readouts.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="chat-input-bar">
+                            <textarea id="chatInput" rows="2"
+                                placeholder="Ask Agent about current screen hits, host pathways, or mechanisms..."></textarea>
+                            <button id="btnSendMessage" class="btn-send-message">&nbsp;&uarr;&nbsp;</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab 3: Code Sandbox (JS & BioJS Engine) -->
+            <div id="tab-sandbox" class="tab-content">
+                <div class="sandbox-container">
+                    <div class="code-sandbox-section">
+                        <div class="sandbox-header">
+                            <span>💻 JavaScript &amp; BioJS Toolset Execution Sandbox</span>
+                            <div class="sandbox-header-actions">
+                                <button id="btnResetCode" class="btn-sm">Reset Sample JS</button>
+                                <button id="btnRunCode" class="btn-sm btn-run-code">⚡ Execute Code</button>
+                            </div>
+                        </div>
+                        <textarea id="agentCodeEditor" rows="10" class="code-editor" spellcheck="false">// Bioinformatics JS Sandbox Code
+const genes = dataset.genes;
+const topPro = BioJS.screen.getTopHits(dataset, 'lateRefined', 10, 'pro-viral');
+const summary = BioJS.stats.summary(genes.map(g => g.lateRefined));
+
+console.log("Dataset Mean Late Refined Intensity:", summary.mean.toFixed(4));
+console.log("Dataset StdDev:", summary.std.toFixed(4));
+console.log("\nTop 5 Pro-Viral Hits:");
+topPro.slice(0, 5).forEach((g, i) => {
+    console.log(`${i+1}. ${g.gene} | Late Int: ${g.lateRefined.toFixed(4)} | Cat: ${g.category}`);
+});</textarea>
+                    </div>
+
+                    <div id="agentTerminal" class="agent-terminal">
+                        <div class="terminal-header">
+                            <span>Console &amp; Execution Logs Output</span>
+                            <button id="btnClearTerminal" class="btn-sm">Clear Terminal</button>
+                        </div>
+                        <pre id="terminalOutput" class="terminal-body">=== AGENT EXECUTION HARNESS READY ===</pre>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
     <footer class="manuscript-info">
-        <p><strong>Manuscript in preparation:</strong> ICARus: Leveraging Protein Language Models as Biological Autocorrect for siRNA screens for poxvirus host-pathogen interactions. Jacob Marcel Anter, Jason Mercer, Artur Yakimovich</p>
-        <p><strong>Correspondence:</strong> <a href="mailto:a.yakimovich@hzdr.de">a.yakimovich@hzdr.de</a> | <a href="https://www.casus.science" target="_blank" rel="noopener noreferrer">www.casus.science</a></p>
+        <p><strong>Manuscript in preparation:</strong> ICARus: Leveraging Protein Language Models as Biological
+            Autocorrect for siRNA screens for poxvirus host-pathogen interactions. Jacob Marcel Anter, Jason Mercer,
+            Artur Yakimovich</p>
+        <p><strong>Correspondence:</strong> <a href="mailto:a.yakimovich@hzdr.de">a.yakimovich@hzdr.de</a> | <a
+                href="https://www.casus.science" target="_blank" rel="noopener noreferrer">www.casus.science</a></p>
     </footer>
 
-    <script src="js/dataset.js?v=3.0"></script>
-    <script type="module" src="js/app.js?v=3.0"></script>
+    <script src="js/dataset.js?v=3.6"></script>
+    <script src="js/biojs-bundle.js?v=1.2"></script>
+    <script type="module" src="js/app.js?v=3.6"></script>
+
 
 
 

@@ -154,6 +154,82 @@ function init() {
             });
         }
 
+        // Setup Right Panel Tab Switching
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const targetTab = e.target.getAttribute('data-tab');
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+
+                e.target.classList.add('active');
+                const contentEl = document.getElementById(targetTab);
+                if (contentEl) contentEl.classList.add('active');
+
+                if (targetTab === 'tab-screen' && lastFilteredData) {
+                    setTimeout(() => updateCharts(lastFilteredData), 50);
+                }
+            });
+        });
+
+        // Setup Agent Parameters Storage & Execution
+        loadAgentCredentials();
+
+        const providerSelect = document.getElementById('providerSelect');
+        if (providerSelect) {
+            providerSelect.addEventListener('change', (e) => {
+                const prov = e.target.value;
+                updateModelDropdown(prov);
+                loadProviderCredentials(prov);
+            });
+        }
+
+        // Setup Agent Chat & Sandbox Handlers
+        const btnSendMessage = document.getElementById('btnSendMessage');
+        const chatInput = document.getElementById('chatInput');
+
+        if (btnSendMessage) btnSendMessage.addEventListener('click', sendChatMessage);
+        if (chatInput) {
+            chatInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendChatMessage();
+                }
+            });
+        }
+
+        const btnRunCode = document.getElementById('btnRunCode');
+        if (btnRunCode) btnRunCode.addEventListener('click', runSandboxCode);
+
+        const btnResetCode = document.getElementById('btnResetCode');
+        if (btnResetCode) {
+            btnResetCode.addEventListener('click', () => {
+                const editor = document.getElementById('agentCodeEditor');
+                if (editor) {
+                    editor.value = `// Bioinformatics JS Sandbox Code
+const genes = dataset.genes;
+const topPro = BioJS.screen.getTopHits(dataset, 'lateRefined', 10, 'pro-viral');
+const summary = BioJS.stats.summary(genes.map(g => g.lateRefined));
+
+console.log("Dataset Mean Late Refined Intensity:", summary.mean.toFixed(4));
+console.log("Dataset StdDev:", summary.std.toFixed(4));
+console.log("\\nTop 5 Pro-Viral Hits:");
+topPro.slice(0, 5).forEach((g, i) => {
+    console.log(\`\${i+1}. \${g.gene} | Late Int: \${g.lateRefined.toFixed(4)} | Cat: \${g.category}\`);
+});`;
+                }
+            });
+        }
+
+        const btnClearTerminal = document.getElementById('btnClearTerminal');
+        if (btnClearTerminal) {
+            btnClearTerminal.addEventListener('click', () => {
+                const term = document.getElementById('terminalOutput');
+                const termContainer = document.getElementById('agentTerminal');
+                if (term) term.textContent = '';
+                if (termContainer) termContainer.classList.add('hidden');
+            });
+        }
+
         // Window resize event for canvas redrawing
         window.addEventListener('resize', () => {
             if (lastFilteredData) updateCharts(lastFilteredData);
@@ -783,6 +859,111 @@ function renderSVGRankPlot(title, sortedData, valueKey, originX, originY, width,
     return s;
 }
 
+const PROVIDER_MODELS = {
+    gemini: [
+        { value: 'gemini-1.5-flash-latest', label: 'gemini-1.5-flash-latest (Recommended Free Tier)' },
+        { value: 'gemini-2.0-flash-exp', label: 'gemini-2.0-flash-exp (Experimental)' },
+        { value: 'gemini-1.5-pro-latest', label: 'gemini-1.5-pro-latest' }
+    ],
+    openai: [
+        { value: 'gpt-4o', label: 'gpt-4o (Recommended)' },
+        { value: 'gpt-4o-mini', label: 'gpt-4o-mini' },
+        { value: 'o3-mini', label: 'o3-mini' }
+    ],
+    claude: [
+        { value: 'claude-3-5-sonnet-20241022', label: 'claude-3.5-sonnet (Recommended)' },
+        { value: 'claude-3-5-haiku-20241022', label: 'claude-3.5-haiku' }
+    ]
+};
+
+function updateModelDropdown(providerKey, selectedModel = null) {
+    const modelSelect = document.getElementById('modelSelect');
+    if (!modelSelect) return;
+
+    modelSelect.innerHTML = '';
+    const models = PROVIDER_MODELS[providerKey] || PROVIDER_MODELS.gemini;
+    models.forEach(m => {
+        const opt = document.createElement('option');
+        opt.value = m.value;
+        opt.textContent = m.label;
+        if (selectedModel && selectedModel === m.value) opt.selected = true;
+        modelSelect.appendChild(opt);
+    });
+}
+
+function saveAgentCredentials() {
+    const providerSelect = document.getElementById('providerSelect');
+    const modelSelect = document.getElementById('modelSelect');
+    const apiKeyInput = document.getElementById('providerApiKey');
+
+    const activeProv = providerSelect ? providerSelect.value : 'gemini';
+    const activeModel = modelSelect ? modelSelect.value : '';
+    const activeKey = apiKeyInput ? apiKeyInput.value.trim() : '';
+
+    let config = {};
+    try {
+        const saved = localStorage.getItem('icaruspox_agent_config');
+        if (saved) config = JSON.parse(saved);
+    } catch (e) {}
+
+    config.activeProvider = activeProv;
+    if (!config.providers) config.providers = {};
+    config.providers[activeProv] = {
+        model: activeModel,
+        apiKey: activeKey
+    };
+
+    localStorage.setItem('icaruspox_agent_config', JSON.stringify(config));
+
+    const statusEl = document.getElementById('agentSaveStatus');
+    if (statusEl) {
+        statusEl.textContent = `✓ Saved ${activeProv.toUpperCase()} parameters in browser storage!`;
+        setTimeout(() => { statusEl.textContent = ''; }, 3500);
+    }
+}
+
+function loadProviderCredentials(providerKey) {
+    try {
+        const saved = localStorage.getItem('icaruspox_agent_config');
+        const apiKeyInput = document.getElementById('providerApiKey');
+        if (!saved) {
+            if (apiKeyInput) apiKeyInput.value = '';
+            return;
+        }
+
+        const config = JSON.parse(saved);
+        const provData = (config.providers && config.providers[providerKey]) ? config.providers[providerKey] : null;
+
+        if (provData) {
+            if (provData.model) updateModelDropdown(providerKey, provData.model);
+            if (apiKeyInput) apiKeyInput.value = provData.apiKey || '';
+        } else {
+            if (apiKeyInput) apiKeyInput.value = '';
+        }
+    } catch (e) {
+        console.error('Error loading provider credentials:', e);
+    }
+}
+
+function loadAgentCredentials() {
+    try {
+        const saved = localStorage.getItem('icaruspox_agent_config');
+        const providerSelect = document.getElementById('providerSelect');
+        let activeProv = 'gemini';
+
+        if (saved) {
+            const config = JSON.parse(saved);
+            if (config.activeProvider) activeProv = config.activeProvider;
+        }
+
+        if (providerSelect) providerSelect.value = activeProv;
+        updateModelDropdown(activeProv);
+        loadProviderCredentials(activeProv);
+    } catch (e) {
+        console.error('Error loading agent config:', e);
+    }
+}
+
 function escapeXML(str) {
     if (!str) return '';
     return String(str)
@@ -790,7 +971,345 @@ function escapeXML(str) {
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;')
-        .replace(/'/g, '&apos;');
+        .replace(/'/g, '&#39;');
+}
+
+async function sendChatMessage() {
+    const inputEl = document.getElementById('chatInput');
+    let prompt = inputEl ? inputEl.value.trim() : '';
+    if (!prompt) {
+        prompt = 'Analyze top pro-viral and anti-viral hits in current screen view';
+    }
+
+    appendChatMessage('user', escapeXML(prompt));
+    if (inputEl) inputEl.value = '';
+
+    const typingMsg = appendChatMessage('agent', '<em>🤖 Analyzing dataset and consulting bioinformatics intelligence engine...</em>');
+
+    try {
+        const responseHtml = await generateAgentResponse(prompt);
+        if (typingMsg) typingMsg.querySelector('.msg-body').innerHTML = responseHtml;
+    } catch (err) {
+        if (typingMsg) typingMsg.querySelector('.msg-body').innerHTML = `⚠️ <strong>Analysis Error:</strong> ${escapeXML(err.message)}`;
+    }
+
+    const historyEl = document.getElementById('chatHistory');
+    if (historyEl) historyEl.scrollTop = historyEl.scrollHeight;
+}
+
+function appendChatMessage(role, contentHtml) {
+    const historyEl = document.getElementById('chatHistory');
+    if (!historyEl) return null;
+
+    const msgDiv = document.createElement('div');
+    msgDiv.className = `chat-message ${role === 'user' ? 'user-msg' : 'agent-msg'}`;
+
+    const header = role === 'user' ? '👤 Researcher Query' : '🤖 BioData Analyst Agent';
+    msgDiv.innerHTML = `<div class="msg-header">${header}</div><div class="msg-body">${contentHtml}</div>`;
+
+    historyEl.appendChild(msgDiv);
+    historyEl.scrollTop = historyEl.scrollHeight;
+    return msgDiv;
+}
+
+async function generateAgentResponse(userPrompt) {
+    const providerSelect = document.getElementById('providerSelect');
+    const modelSelect = document.getElementById('modelSelect');
+    const apiKeyInput = document.getElementById('providerApiKey');
+
+    let activeProv = providerSelect ? providerSelect.value : 'gemini';
+    let model = modelSelect ? modelSelect.value : '';
+    let apiKey = apiKeyInput ? apiKeyInput.value.trim() : '';
+
+    if (!apiKey) {
+        const saved = localStorage.getItem('icaruspox_agent_config');
+        if (saved) {
+            try {
+                const config = JSON.parse(saved);
+                if (config.activeProvider) activeProv = config.activeProvider;
+                const provData = (config.providers && config.providers[activeProv]) ? config.providers[activeProv] : null;
+                if (provData) {
+                    if (provData.apiKey) apiKey = provData.apiKey.trim();
+                    if (provData.model && !model) model = provData.model;
+                }
+            } catch (e) {}
+        }
+    }
+
+    if (apiKey && apiKey.length > 5) {
+        try {
+            return await callLLMAPI(activeProv, model, apiKey, userPrompt);
+        } catch (apiErr) {
+            console.error('API call error:', apiErr);
+            return `<div class="api-error-badge">⚠️ <strong>API Call Failed (${escapeXML(activeProv.toUpperCase())}):</strong> ${escapeXML(apiErr.message)}<br><small>Falling back to dynamic offline analysis below:</small></div><br>` + generateLocalBioinformaticsResponse(userPrompt);
+        }
+    }
+
+    return generateLocalBioinformaticsResponse(userPrompt);
+}
+
+function renderMarkdownToHTML(md) {
+    if (!md) return '';
+    let html = md
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/```([\s\S]*?)```/g, '<pre class="code-block"><code>$1</code></pre>')
+        .replace(/`([^`]+)`/g, '<code>$1</code>')
+        .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*([^*]+)\*/g, '<em>$1</em>')
+        .replace(/^### (.*$)/gim, '<h4>$1</h4>')
+        .replace(/^## (.*$)/gim, '<h3>$1</h3>')
+        .replace(/^# (.*$)/gim, '<h2>$1</h2>')
+        .replace(/^\s*[\-\*] (.*$)/gim, '<li>$1</li>')
+        .replace(/\n\n/g, '<br><br>')
+        .replace(/\n/g, '<br>');
+    return html;
+}
+
+async function callLLMAPI(provider, model, apiKey, prompt) {
+    const dataContext = buildDataContext();
+    const systemPrompt = `You are an expert Bioinformatics Data Analyst Agent specializing in high-throughput siRNA screening data, poxvirus host-pathogen interactions, and protein language models (ICARus).
+Base all biological conclusions directly on numerical screen values (early vs late, refined vs unrefined). Always highlight key genes, fold shifts, and biological categories. Provide clear, well-structured analysis.`;
+
+    const userMessage = `Dataset Context:\n${dataContext}\n\nUser Query: ${prompt}`;
+
+    if (provider === 'gemini') {
+        const cleanKey = apiKey.trim();
+        const candidateModels = [
+            model,
+            'gemini-1.5-flash',
+            'gemini-2.0-flash-exp',
+            'gemini-1.5-flash-latest',
+            'gemini-1.5-pro',
+            'gemini-1.5-pro-latest',
+            'gemini-2.0-flash'
+        ].filter(Boolean);
+
+        const uniqueModels = Array.from(new Set(candidateModels));
+        let lastError = null;
+
+        for (const m of uniqueModels) {
+            for (const apiVer of ['v1beta', 'v1']) {
+                const url = `https://generativelanguage.googleapis.com/${apiVer}/models/${m}:generateContent?key=${cleanKey}`;
+                try {
+                    const res = await fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            system_instruction: { parts: [{ text: systemPrompt }] },
+                            contents: [{ parts: [{ text: userMessage }] }]
+                        })
+                    });
+
+                    if (res.ok) {
+                        const data = await res.json();
+                        const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                        if (text) return renderMarkdownToHTML(text);
+                    } else {
+                        const errData = await res.json().catch(() => ({}));
+                        lastError = errData.error?.message || `HTTP ${res.status}`;
+                    }
+                } catch (e) {
+                    lastError = e.message;
+                }
+            }
+        }
+
+        // If candidates fail, discover supported models via ListModels API
+        try {
+            const listRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${cleanKey}`);
+            if (listRes.ok) {
+                const listData = await listRes.json();
+                const available = (listData.models || [])
+                    .filter(m => (m.supportedGenerationMethods || []).includes('generateContent'))
+                    .map(m => m.name.replace('models/', ''));
+
+                if (available.length > 0) {
+                    for (const discoverModel of available) {
+                        for (const apiVer of ['v1beta', 'v1']) {
+                            const url = `https://generativelanguage.googleapis.com/${apiVer}/models/${discoverModel}:generateContent?key=${cleanKey}`;
+                            const res = await fetch(url, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    system_instruction: { parts: [{ text: systemPrompt }] },
+                                    contents: [{ parts: [{ text: userMessage }] }]
+                                })
+                            });
+                            if (res.ok) {
+                                const data = await res.json();
+                                const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                                if (text) return renderMarkdownToHTML(text);
+                            }
+                        }
+                    }
+                    throw new Error(`Available models for this key: [${available.join(', ')}]. Last error: ${lastError}`);
+                }
+            }
+        } catch (listErr) {
+            if (listErr.message && listErr.message.includes('Available models')) throw listErr;
+        }
+
+        throw new Error(`Gemini API Error: ${lastError}`);
+    } else if (provider === 'openai') {
+        const res = await fetch('https://api.openai.com/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${apiKey}`
+            },
+            body: JSON.stringify({
+                model: model || 'gpt-4o',
+                messages: [
+                    { role: 'system', content: systemPrompt },
+                    { role: 'user', content: userMessage }
+                ]
+            })
+        });
+        if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            const errMsg = errData.error?.message || `HTTP ${res.status} ${res.statusText}`;
+            throw new Error(`OpenAI API Error: ${errMsg}`);
+        }
+        const data = await res.json();
+        const text = data.choices?.[0]?.message?.content || 'No response text returned from OpenAI API.';
+        return renderMarkdownToHTML(text);
+    } else if (provider === 'claude') {
+        const res = await fetch('https://api.anthropic.com/v1/messages', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'x-api-key': apiKey,
+                'anthropic-version': '2023-06-01',
+                'anthropic-dangerously-allow-browser': 'true'
+            },
+            body: JSON.stringify({
+                model: model || 'claude-3-5-sonnet-20241022',
+                max_tokens: 1024,
+                system: systemPrompt,
+                messages: [{ role: 'user', content: userMessage }]
+            })
+        });
+        if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            const errMsg = errData.error?.message || `HTTP ${res.status} ${res.statusText}`;
+            throw new Error(`Claude API Error: ${errMsg}`);
+        }
+        const data = await res.json();
+        const text = data.content?.[0]?.text || 'No response text returned from Claude API.';
+        return renderMarkdownToHTML(text);
+    }
+
+    return generateLocalBioinformaticsResponse(prompt);
+}
+
+function buildDataContext() {
+    const totalCount = lastFilteredData ? lastFilteredData.length : 0;
+    const sorted = getSortedData(lastFilteredData || dataset.genes);
+    const topPro = sorted.filter(d => d.lateDirection === 'pro-viral' || d.earlyDirection === 'pro-viral').slice(0, 10);
+    const topAnti = sorted.filter(d => d.lateDirection === 'anti-viral' || d.earlyDirection === 'anti-viral').slice(0, 10);
+
+    return `- Displayed Subset: ${totalCount.toLocaleString()} genes (${refinementMode} mode)
+- Top Pro-Viral Candidates: ${topPro.map(g => `${g.gene} [Early:${g.earlyIntensity.toFixed(2)}, Late:${g.lateIntensity.toFixed(2)}, Cat:${g.category}]`).join('; ')}
+- Top Anti-Viral Candidates: ${topAnti.map(g => `${g.gene} [Early:${g.earlyIntensity.toFixed(2)}, Late:${g.lateIntensity.toFixed(2)}, Cat:${g.category}]`).join('; ')}`;
+}
+
+function generateLocalBioinformaticsResponse(userPrompt) {
+    const q = userPrompt.toLowerCase();
+    const sorted = getSortedData(lastFilteredData || dataset.genes);
+    const count = sorted.length;
+
+    // Check if query is looking for a specific gene
+    const words = userPrompt.trim().split(/[\s,;:!?]+/);
+    const potentialGene = words.find(w => w.length >= 2 && w.toUpperCase() === w && /[A-Z0-9]/.test(w));
+    let geneMatch = null;
+    if (potentialGene) {
+        geneMatch = dataset.genes.find(g => g.gene.toUpperCase() === potentialGene.toUpperCase());
+    }
+
+    if (geneMatch) {
+        const stats = BioJS.stats.summary(dataset.genes.map(g => g.lateRefined));
+        const zScore = BioJS.stats.zScore(geneMatch.lateRefined, stats.mean, stats.std);
+        return `<strong>Gene Target Query Results for <code>${geneMatch.gene}</code>:</strong><br>
+• <strong>Cellular Function</strong>: ${geneMatch.category}<br>
+• <strong>Early Intensities</strong>: Raw (Unrefined) = <code>${geneMatch.earlyUnrefined.toFixed(4)}</code> | ICARus-Refined = <code>${geneMatch.earlyRefined.toFixed(4)}</code> (${geneMatch.earlyDirection})<br>
+• <strong>Late Intensities</strong>: Raw (Unrefined) = <code>${geneMatch.lateUnrefined.toFixed(4)}</code> | ICARus-Refined = <code>${geneMatch.lateRefined.toFixed(4)}</code> (${geneMatch.lateDirection})<br>
+• <strong>Z-Score (Late Refined)</strong>: <code>${zScore > 0 ? '+' : ''}${zScore.toFixed(3)}</code><br>
+• <strong>Cell Count Impact</strong>: <code>${geneMatch.cellCount}</code> cells per well<br><br>
+<em>Mechanism Insight: siRNA knockdown of ${geneMatch.gene} demonstrates a <strong>${geneMatch.lateDirection}</strong> effect during late poxvirus infection cycle.</em>`;
+    }
+
+    // Category / Pathway Search
+    const categories = Array.from(new Set(dataset.genes.map(g => g.category)));
+    const matchedCategory = categories.find(c => q.includes(c.toLowerCase()) || c.toLowerCase().split(' ').some(w => w.length > 3 && q.includes(w)));
+
+    if (matchedCategory) {
+        const catGenes = sorted.filter(g => g.category === matchedCategory);
+        const proCat = catGenes.filter(g => g.lateDirection === 'pro-viral' || g.earlyDirection === 'pro-viral');
+        const antiCat = catGenes.filter(g => g.lateDirection === 'anti-viral' || g.earlyDirection === 'anti-viral');
+
+        return `<strong>Pathway &amp; Function Analysis: <em>"${matchedCategory}"</em></strong><br>
+• Total Genes in Category: <strong>${catGenes.length}</strong> (of ${count.toLocaleString()} in view)<br>
+• Phenotype Ratio: <strong>${proCat.length}</strong> Pro-viral vs <strong>${antiCat.length}</strong> Anti-viral<br><br>
+<strong>Top Hits in "${matchedCategory}":</strong><br>
+• <strong>Pro-Viral Candidates</strong>: ${proCat.slice(0, 5).map(g => `<code>${g.gene}</code> (Late:${g.lateIntensity.toFixed(2)})`).join(', ') || 'None'}<br>
+• <strong>Anti-Viral Candidates</strong>: ${antiCat.slice(0, 5).map(g => `<code>${g.gene}</code> (Late:${g.lateIntensity.toFixed(2)})`).join(', ') || 'None'}`;
+    }
+
+    // Phenotype / Direction Query
+    if (q.includes('pro') || q.includes('anti') || q.includes('top') || q.includes('hit') || q.includes('rank') || q.includes('best') || q.includes('strongest')) {
+        const proHits = sorted.filter(d => d.lateDirection === 'pro-viral' || d.earlyDirection === 'pro-viral').slice(0, 8);
+        const antiHits = sorted.filter(d => d.lateDirection === 'anti-viral' || d.earlyDirection === 'anti-viral').slice(0, 8);
+
+        return `<strong>Top Phenotypic Hits Analysis (${count.toLocaleString()} Genes in Current View):</strong><br><br>
+<strong>🔥 Top Pro-Viral Knockdowns (Inhibit Poxvirus Replication when Depleted):</strong>
+<ul>
+${proHits.map(g => `<li><code>${g.gene}</code> — Late Int: <strong>${g.lateIntensity.toFixed(4)}</strong> (Category: <em>${g.category}</em>)</li>`).join('')}
+</ul>
+<strong>🛡️ Top Anti-Viral Knockdowns (Promote Poxvirus Replication when Depleted):</strong>
+<ul>
+${antiHits.map(g => `<li><code>${g.gene}</code> — Late Int: <strong>${g.lateIntensity.toFixed(4)}</strong> (Category: <em>${g.category}</em>)</li>`).join('')}
+</ul>`;
+    }
+
+    // Default Overview Query
+    const summaryStats = BioJS.stats.summary(sorted.map(d => d.lateIntensity));
+    const proCount = sorted.filter(d => d.lateDirection === 'pro-viral' || d.earlyDirection === 'pro-viral').length;
+    const antiCount = sorted.filter(d => d.lateDirection === 'anti-viral' || d.earlyDirection === 'anti-viral').length;
+
+    return `<strong>Analytical Response for: <em>"${escapeXML(userPrompt)}"</em></strong><br><br>
+• <strong>Screen Context</strong>: ${count.toLocaleString()} displayed genes (${refinementMode} mode)<br>
+• <strong>Global Readout Distribution</strong>: Mean = <code>${summaryStats.mean.toFixed(4)}</code>, StdDev = <code>${summaryStats.std.toFixed(4)}</code>, Median = <code>${summaryStats.median.toFixed(4)}</code><br>
+• <strong>Screen Balance</strong>: <strong>${proCount.toLocaleString()}</strong> Pro-viral hits vs <strong>${antiCount.toLocaleString()}</strong> Anti-viral hits<br><br>
+<em>💡 Tip: Type a specific gene symbol (e.g. <code>AAK1</code> or <code>TP53</code>) or functional category (e.g. <code>lipid</code> or <code>ribosome</code>) for detailed host-pathogen targeted insights!</em>`;
+}
+
+function runSandboxCode() {
+    const editor = document.getElementById('agentCodeEditor');
+    const termOutput = document.getElementById('terminalOutput');
+    if (!editor || !termOutput) return;
+
+    const code = editor.value;
+    let logs = [];
+    const customConsole = {
+        log: (...args) => logs.push(args.map(a => typeof a === 'object' ? JSON.stringify(a, null, 2) : String(a)).join(' ')),
+        error: (...args) => logs.push('[ERROR] ' + args.join(' ')),
+        warn: (...args) => logs.push('[WARN] ' + args.join(' '))
+    };
+
+    logs.push(`=== CODE SANDBOX EXECUTION ===`);
+    logs.push(`Timestamp: ${new Date().toLocaleTimeString()}\n`);
+
+    try {
+        const runFn = new Function('dataset', 'BioJS', 'console', code);
+        runFn(dataset, window.BioJS, customConsole);
+        logs.push(`\n[Execution Finished Successfully]`);
+    } catch (err) {
+        logs.push(`\n[Runtime Exception]: ${err.message}`);
+    }
+
+    termOutput.textContent = logs.join('\n');
 }
 
 // Run init on DOMContentLoaded or immediately if already loaded

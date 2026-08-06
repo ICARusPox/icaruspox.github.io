@@ -37,4 +37,6 @@ If you modify or replace `assets/ICARusPox_web_resource_table.tsv`, recompile `j
 ./update_dataset.sh [path_to_tsv]   # Defaults to assets/ICARusPox_web_resource_table.tsv
 ```
 
+## License
 
+This project and its associated screening datasets are licensed under the **[Creative Commons Attribution-NonCommercial 4.0 International License (CC BY-NC 4.0)](https://creativecommons.org/licenses/by-nc/4.0/)**.

@@ -253,12 +253,12 @@ function getProcessedGeneList() {
         const lateInt = isRefined ? g.lateRefined : g.lateUnrefined;
 
         let earlyDirection = 'none';
-        if (earlyInt > 0.0001) earlyDirection = 'pro-viral';
-        else if (earlyInt < -0.0001) earlyDirection = 'anti-viral';
+        if (earlyInt > 0.0001) earlyDirection = 'anti-viral';
+        else if (earlyInt < -0.0001) earlyDirection = 'pro-viral';
 
         let lateDirection = 'none';
-        if (lateInt > 0.0001) lateDirection = 'pro-viral';
-        else if (lateInt < -0.0001) lateDirection = 'anti-viral';
+        if (lateInt > 0.0001) lateDirection = 'anti-viral';
+        else if (lateInt < -0.0001) lateDirection = 'pro-viral';
 
         return {
             gene: g.gene,
@@ -369,10 +369,10 @@ function renderTable(displayData) {
         let lateClass = d.lateDirection === 'pro-viral' ? 'val-late-pro' : (d.lateDirection === 'anti-viral' ? 'val-late-anti' : '');
 
         let earlyBadgeClass = d.earlyDirection === 'pro-viral' ? 'early-pro' : (d.earlyDirection === 'anti-viral' ? 'early-anti' : 'none');
-        let earlyArrow = d.earlyDirection === 'pro-viral' ? '↑' : (d.earlyDirection === 'anti-viral' ? '↓' : '–');
+        let earlyArrow = d.earlyDirection === 'anti-viral' ? '↑' : (d.earlyDirection === 'pro-viral' ? '↓' : '–');
 
         let lateBadgeClass = d.lateDirection === 'pro-viral' ? 'late-pro' : (d.lateDirection === 'anti-viral' ? 'late-anti' : 'none');
-        let lateArrow = d.lateDirection === 'pro-viral' ? '↑' : (d.lateDirection === 'anti-viral' ? '↓' : '–');
+        let lateArrow = d.lateDirection === 'anti-viral' ? '↑' : (d.lateDirection === 'pro-viral' ? '↓' : '–');
 
         tr.innerHTML = `
             <td style="font-weight: 600;">${d.gene}</td>
@@ -734,7 +734,7 @@ function exportToSVG() {
         svg += `      <text x="185" y="15" font-size="11" font-weight="600" fill="${lateClass}">${d.lateIntensity.toFixed(3)}</text>\n`;
 
         // Early Badge
-        const earlyArrow = d.earlyDirection === 'pro-viral' ? '↑' : (d.earlyDirection === 'anti-viral' ? '↓' : '–');
+        const earlyArrow = d.earlyDirection === 'anti-viral' ? '↑' : (d.earlyDirection === 'pro-viral' ? '↓' : '–');
         const earlyBg = d.earlyDirection === 'pro-viral' ? '#fef3c7' : (d.earlyDirection === 'anti-viral' ? '#d1fae5' : '#f8f9fa');
         const earlyBorder = d.earlyDirection === 'pro-viral' ? '#fcd34d' : (d.earlyDirection === 'anti-viral' ? '#6ee7b7' : '#e9ecef');
         const earlyTextCol = d.earlyDirection === 'pro-viral' ? '#b45309' : (d.earlyDirection === 'anti-viral' ? '#047857' : '#6c757d');
@@ -743,7 +743,7 @@ function exportToSVG() {
         svg += `      <text x="290" y="14" text-anchor="middle" font-size="10" font-weight="bold" fill="${earlyTextCol}">E ${earlyArrow}</text>\n`;
 
         // Late Badge
-        const lateArrow = d.lateDirection === 'pro-viral' ? '↑' : (d.lateDirection === 'anti-viral' ? '↓' : '–');
+        const lateArrow = d.lateDirection === 'anti-viral' ? '↑' : (d.lateDirection === 'pro-viral' ? '↓' : '–');
         const lateBg = d.lateDirection === 'pro-viral' ? '#ffedd5' : (d.lateDirection === 'anti-viral' ? '#dbeafe' : '#f8f9fa');
         const lateBorder = d.lateDirection === 'pro-viral' ? '#fdba74' : (d.lateDirection === 'anti-viral' ? '#93c5fd' : '#e9ecef');
         const lateTextCol = d.lateDirection === 'pro-viral' ? '#c2410c' : (d.lateDirection === 'anti-viral' ? '#1d4ed8' : '#6c757d');
@@ -764,14 +764,23 @@ function exportToSVG() {
 
     svg += `  </g>\n`;
 
-    // Rank Plots Section (Right Side)
+    // Right Panel Section (Renders active tab: Screen Readout, Agent Chat, or Code Sandbox)
     const chartX = 680;
     const chartY = 112;
     const chartWidth = 710;
     const chartHeight = 360;
 
-    svg += renderSVGRankPlot('Early Intensities', [...lastFilteredData].sort((a, b) => a.earlyIntensity - b.earlyIntensity), 'earlyIntensity', chartX, chartY, chartWidth, chartHeight, '#f59e0b', '#10b981');
-    svg += renderSVGRankPlot('Late Intensities', [...lastFilteredData].sort((a, b) => a.lateIntensity - b.lateIntensity), 'lateIntensity', chartX, chartY + chartHeight + 20, chartWidth, chartHeight, '#ea580c', '#2563eb');
+    const activeTabBtn = document.querySelector('.panel-tabs .tab-btn.active');
+    const activeTabId = activeTabBtn ? activeTabBtn.getAttribute('data-tab') : 'tab-screen';
+
+    if (activeTabId === 'tab-chat') {
+        svg += renderSVGAgentChat(chartX, chartY, chartWidth, 750);
+    } else if (activeTabId === 'tab-sandbox') {
+        svg += renderSVGCodeSandbox(chartX, chartY, chartWidth, 750);
+    } else {
+        svg += renderSVGRankPlot('Early Intensities', [...lastFilteredData].sort((a, b) => a.earlyIntensity - b.earlyIntensity), 'earlyIntensity', chartX, chartY, chartWidth, chartHeight, '#f59e0b', '#10b981');
+        svg += renderSVGRankPlot('Late Intensities', [...lastFilteredData].sort((a, b) => a.lateIntensity - b.lateIntensity), 'lateIntensity', chartX, chartY + chartHeight + 20, chartWidth, chartHeight, '#ea580c', '#2563eb');
+    }
 
     svg += `</svg>`;
 
@@ -780,11 +789,122 @@ function exportToSVG() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `ICARusPox_dashboard_${refinementMode}_${new Date().toISOString().slice(0, 10)}.svg`;
+    link.download = `ICARusPox_${activeTabId}_${refinementMode}_${new Date().toISOString().slice(0, 10)}.svg`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
+}
+
+function renderSVGAgentChat(originX, originY, width, height) {
+    let s = `  <!-- Agent Chat Section -->\n`;
+    s += `  <g transform="translate(${originX}, ${originY})">\n`;
+    s += `    <rect width="${width}" height="${height}" fill="#ffffff" stroke="#e9ecef" rx="6"/>\n`;
+    
+    // Header
+    s += `    <rect width="${width}" height="36" fill="#f8f9fa" stroke="#e9ecef" rx="6"/>\n`;
+    s += `    <text x="16" y="23" font-size="13" font-weight="bold" fill="#1c7ed6">🤖 Bioinformatics Agent Chat Transcript</text>\n`;
+
+    const providerSelect = document.getElementById('providerSelect');
+    const modelSelect = document.getElementById('modelSelect');
+    const provName = providerSelect ? providerSelect.options[providerSelect.selectedIndex]?.text : 'Google Gemini';
+    const modelName = modelSelect ? modelSelect.value : '';
+
+    s += `    <text x="${width - 16}" y="23" text-anchor="end" font-size="11" fill="#6c757d">${escapeXML(provName)} | ${escapeXML(modelName)}</text>\n`;
+
+    // Extract Chat Messages from DOM
+    const msgEls = document.querySelectorAll('#chatHistory .chat-message');
+    let currY = 52;
+
+    msgEls.forEach((el) => {
+        if (currY > height - 60) return;
+        const isUser = el.classList.contains('user-msg');
+        const headerText = el.querySelector('.msg-header')?.textContent || (isUser ? '👤 Researcher' : '🤖 Agent');
+        
+        const bodyText = el.querySelector('.msg-body')?.innerText || el.textContent || '';
+        const lines = wrapTextForSVG(bodyText, isUser ? 55 : 68);
+        const displayLines = lines.slice(0, 10);
+        const bubbleHeight = 24 + (displayLines.length * 15);
+        const bubbleWidth = isUser ? Math.min(520, Math.max(220, (displayLines[0] || '').length * 8 + 30)) : 670;
+        const bubbleX = isUser ? (width - bubbleWidth - 16) : 16;
+
+        const bgCol = isUser ? '#e7f5ff' : '#f8f9fa';
+        const borderCol = isUser ? '#a5d8ff' : '#e9ecef';
+        const textCol = isUser ? '#1864ab' : '#212529';
+
+        s += `    <g transform="translate(${bubbleX}, ${currY})">\n`;
+        s += `      <rect width="${bubbleWidth}" height="${bubbleHeight}" fill="${bgCol}" stroke="${borderCol}" rx="6"/>\n`;
+        s += `      <text x="12" y="16" font-size="10" font-weight="bold" fill="${isUser ? '#1971c2' : '#6c757d'}">${escapeXML(headerText)}</text>\n`;
+        
+        displayLines.forEach((line, lineIdx) => {
+            s += `      <text x="12" y="${32 + lineIdx * 15}" font-size="11" fill="${textCol}">${escapeXML(line)}</text>\n`;
+        });
+        s += `    </g>\n`;
+
+        currY += bubbleHeight + 12;
+    });
+
+    s += `  </g>\n`;
+    return s;
+}
+
+function renderSVGCodeSandbox(originX, originY, width, height) {
+    let s = `  <!-- Code Sandbox Section -->\n`;
+    s += `  <g transform="translate(${originX}, ${originY})">\n`;
+    s += `    <rect width="${width}" height="${height}" fill="#ffffff" stroke="#e9ecef" rx="6"/>\n`;
+
+    const editorEl = document.getElementById('agentCodeEditor');
+    const terminalEl = document.getElementById('terminalOutput');
+    const codeText = editorEl ? editorEl.value : '// No code';
+    const termText = terminalEl ? terminalEl.textContent : '=== NO LOGS ===';
+
+    // Code Editor Box (Top half)
+    const codeH = 360;
+    s += `    <g transform="translate(14, 14)">\n`;
+    s += `      <rect width="${width - 28}" height="${codeH}" fill="#1e1e1e" rx="6"/>\n`;
+    s += `      <text x="14" y="24" font-size="11" font-weight="bold" fill="#38d9a9" font-family="monospace">💻 JavaScript &amp; BioJS Execution Sandbox</text>\n`;
+    s += `      <line x1="14" y1="34" x2="${width - 42}" y2="34" stroke="#333333"/>\n`;
+
+    const codeLines = codeText.split('\n');
+    codeLines.slice(0, 18).forEach((line, i) => {
+        s += `      <text x="14" y="${52 + i * 16}" font-size="11" fill="#d4d4d4" font-family="monospace">${escapeXML(line.substring(0, 85))}</text>\n`;
+    });
+    s += `    </g>\n`;
+
+    // Terminal Output Box (Bottom half)
+    const termY = codeH + 28;
+    const termH = height - termY - 14;
+    s += `    <g transform="translate(14, ${termY})">\n`;
+    s += `      <rect width="${width - 28}" height="${termH}" fill="#0d1117" stroke="#30363d" rx="6"/>\n`;
+    s += `      <text x="14" y="24" font-size="11" font-weight="bold" fill="#8b949e" font-family="monospace">Console Output &amp; Terminal Logs</text>\n`;
+    s += `      <line x1="14" y1="34" x2="${width - 42}" y2="34" stroke="#30363d"/>\n`;
+
+    const termLines = termText.split('\n');
+    termLines.slice(0, 16).forEach((line, i) => {
+        s += `      <text x="14" y="${52 + i * 16}" font-size="11" fill="#7ee787" font-family="monospace">${escapeXML(line.substring(0, 85))}</text>\n`;
+    });
+    s += `    </g>\n`;
+
+    s += `  </g>\n`;
+    return s;
+}
+
+function wrapTextForSVG(str, maxCharsPerLine = 60) {
+    if (!str) return [];
+    const words = str.replace(/\s+/g, ' ').trim().split(' ');
+    const lines = [];
+    let currentLine = '';
+
+    for (let word of words) {
+        if ((currentLine + word).length <= maxCharsPerLine) {
+            currentLine += (currentLine ? ' ' : '') + word;
+        } else {
+            if (currentLine) lines.push(currentLine);
+            currentLine = word;
+        }
+    }
+    if (currentLine) lines.push(currentLine);
+    return lines;
 }
 
 function renderSVGRankPlot(title, sortedData, valueKey, originX, originY, width, height, proColor, antiColor) {

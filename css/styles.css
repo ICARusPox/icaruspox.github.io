@@ -25,6 +25,51 @@ body {
     flex-direction: column;
 }
 
+/* Loading Overlay & Processing Cursor */
+body.processing,
+body.processing * {
+    cursor: wait !important;
+}
+
+.loading-overlay {
+    position: fixed;
+    top: 18px;
+    right: 24px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 7px 16px;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(8px);
+    border: 1px solid var(--border-color);
+    border-radius: 20px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    font-size: 13px;
+    font-weight: 600;
+    color: #1c7ed6;
+    z-index: 1000;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.loading-overlay.hidden {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(-8px);
+}
+
+.spinner {
+    width: 14px;
+    height: 14px;
+    border: 2px solid #a5d8ff;
+    border-top-color: #1c7ed6;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
 /* Header */
 header {
     display: flex;
@@ -106,6 +151,49 @@ header {
     border-bottom: 1px solid var(--border-color);
     background: #fff;
     flex-wrap: wrap;
+}
+
+.btn-download {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 12px;
+    background-color: #e7f5ff;
+    color: #1c7ed6;
+    border: 1px solid #a5d8ff;
+    border-radius: 4px;
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.btn-download:hover {
+    background-color: #d0ebff;
+    color: #1971c2;
+    border-color: #74c0fc;
+    text-decoration: none;
+}
+
+.btn-export {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 12px;
+    background-color: #ebfbee;
+    color: #2b8a3e;
+    border: 1px solid #b2f2bb;
+    border-radius: 4px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-export:hover {
+    background-color: #d3f9d8;
+    color: #2b7038;
+    border-color: #8ce99a;
 }
 
 #refinementFilter {

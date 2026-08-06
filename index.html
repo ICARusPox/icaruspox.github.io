@@ -11,6 +11,11 @@
 
 <body>
 
+    <div id="loadingOverlay" class="loading-overlay hidden">
+        <div class="spinner"></div>
+        <span id="loadingText">Processing 17,672 genes...</span>
+    </div>
+
     <header>
         <div class="brand">
             <h1>ICARusPox</h1>
@@ -26,6 +31,12 @@
     </header>
 
     <div class="controls">
+        <a href="assets/ICARusPox_web_resource_table.tsv" download="ICARusPox_web_resource_table.tsv" class="btn-download" title="Download full TSV dataset">
+            &#8595; Download TSV
+        </a>
+        <button id="btnExportSVG" class="btn-export" title="Export current dashboard view as publication-ready vector SVG">
+            &#127912; Export SVG
+        </button>
         <select id="refinementFilter" title="Toggle Refined vs Unrefined intensities">
             <option value="refined">Refined (ICARus Interactome-Corrected)</option>
             <option value="unrefined">Unrefined (Raw Screen)</option>
@@ -104,8 +115,10 @@
         <p><strong>Correspondence:</strong> <a href="mailto:a.yakimovich@hzdr.de">a.yakimovich@hzdr.de</a> | <a href="https://www.casus.science" target="_blank" rel="noopener noreferrer">www.casus.science</a></p>
     </footer>
 
-    <script src="js/dataset.js?v=2.6"></script>
-    <script type="module" src="js/app.js?v=2.6"></script>
+    <script src="js/dataset.js?v=3.0"></script>
+    <script type="module" src="js/app.js?v=3.0"></script>
+
+
 
 </body>
 

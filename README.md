@@ -37,6 +37,8 @@ If you modify or replace `assets/ICARusPox_web_resource_table.tsv`, recompile `j
 ./update_dataset.sh [path_to_tsv]   # Defaults to assets/ICARusPox_web_resource_table.tsv
 ```
 
-## License
+## License & Third-Party Credits
 
-This project and its associated screening datasets are licensed under the **[Creative Commons Attribution-NonCommercial 4.0 International License (CC BY-NC 4.0)](https://creativecommons.org/licenses/by-nc/4.0/)**.
+- **ICARusPox Project & Screen Data**: Licensed under the **[Creative Commons Attribution-NonCommercial 4.0 International License (CC BY-NC 4.0)](https://creativecommons.org/licenses/by-nc/4.0/)**.
+- **BioJS (`js/biojs-bundle.js`)**: Incorporates and adapts software from **[BioJS](https://github.com/biojs/biojs)**, licensed under the **[Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0)**. See [`THIRD-PARTY-NOTICES.md`](file:///Users/ayakimovich/Documents/GitHub/icaruspox.github.io/THIRD-PARTY-NOTICES.md) for full license terms and notices.
+

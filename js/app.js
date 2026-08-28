@@ -1187,10 +1187,26 @@ function renderMarkdownToHTML(md) {
     return html;
 }
 
+let cachedAgentsInstructions = null;
+
+async function getAgentsInstructions() {
+    if (cachedAgentsInstructions) return cachedAgentsInstructions;
+    try {
+        const res = await fetch('./AGENTS.md');
+        if (res.ok) {
+            cachedAgentsInstructions = await res.text();
+            return cachedAgentsInstructions;
+        }
+    } catch (e) {
+        console.warn('Could not fetch AGENTS.md, using default system prompt fallback:', e);
+    }
+    return `You are an expert Bioinformatics Data Analyst Agent specializing in high-throughput siRNA screening data, poxvirus host-pathogen interactions, and protein language models (ICARus).
+Base all biological conclusions directly on numerical screen values (early vs late, refined vs unrefined). Always highlight key genes, fold shifts, and biological categories. Provide clear, well-structured analysis.`;
+}
+
 async function callLLMAPI(provider, model, apiKey, prompt) {
     const dataContext = buildDataContext();
-    const systemPrompt = `You are an expert Bioinformatics Data Analyst Agent specializing in high-throughput siRNA screening data, poxvirus host-pathogen interactions, and protein language models (ICARus).
-Base all biological conclusions directly on numerical screen values (early vs late, refined vs unrefined). Always highlight key genes, fold shifts, and biological categories. Provide clear, well-structured analysis.`;
+    const systemPrompt = await getAgentsInstructions();
 
     const userMessage = `Dataset Context:\n${dataContext}\n\nUser Query: ${prompt}`;
 

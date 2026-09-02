@@ -187,3 +187,38 @@ This document contains license and copyright notices for third-party software co
       incurred by, or claims asserted against, such Contributor by reason
       of your accepting any such warranty or additional liability.
 ```
+
+---
+
+## Drug-Gene Interaction Database (DGIdb) (`assets/dgidb_interactions.tsv` & `js/dgidb_dataset.js`)
+
+- **Component Name**: DGIdb (Drug-Gene Interaction Database v5)
+- **Project Website**: [https://dgidb.org](https://dgidb.org)
+- **Source Code Repository**: [https://github.com/dgidb/dgidb-v5](https://github.com/dgidb/dgidb-v5)
+- **Data Release Repository**: [https://github.com/dgidb/dgidb-data](https://github.com/dgidb/dgidb-data)
+- **Notice Summary**: Standalone license and source attribution details are also available in [`assets/DGIDB-LICENSE-NOTICES.md`](file:///Users/ayakimovich/Documents/GitHub/icaruspox.github.io/assets/DGIDB-LICENSE-NOTICES.md).
+
+### Literature Citations
+
+1. **DGIdb 5.0**:
+   Cannon M, et al. *DGIdb 5.0: rebuilding the drug-gene interaction database*. Nucleic Acids Research, 2024.
+2. **DGIdb 4.0**:
+   Freshour SL, Kiwala S, Cotto KC, Coffman AC, McMichael KF, Song JJ, Griffith M, Griffith OL. *DGIdb 4.0: a redesign of the drug-gene interaction database*. Nucleic Acids Research, 2021 Jan 8;49(D1):D1144-D1151. [doi:10.1093/nar/gkaa1084](https://doi.org/10.1093/nar/gkaa1084)
+3. **DGIdb 3.0**:
+   Cotto KC, et al. *DGIdb 3.0: a redesign and expansion of the drug-gene interaction database*. Nucleic Acids Research, 2018 Jan 4;46(D1):D1068-D1073. [doi:10.1093/nar/gkx1143](https://doi.org/10.1093/nar/gkx1143)
+
+### Multi-Source Data Provider Licenses & Terms
+
+DGIdb aggregates data across 40+ primary biomedical resources. Users utilizing DGIdb interaction data are subject to individual primary source licenses:
+
+- **ChEMBL** (EMBL-EBI): CC BY-SA 3.0 / CC BY 4.0 ([https://www.ebi.ac.uk/chembl/](https://www.ebi.ac.uk/chembl/))
+- **DrugBank**: CC BY-NC 4.0 ([https://go.drugbank.com](https://go.drugbank.com))
+- **PharmGKB**: CC BY-SA 4.0 ([https://www.pharmgkb.org](https://www.pharmgkb.org))
+- **IUPHAR / BPS Guide to PHARMACOLOGY**: CC BY-SA 4.0 ([https://www.guidetopharmacology.org](https://www.guidetopharmacology.org))
+- **NCI Thesaurus (NCIt)**: Public Domain / NCI Terms ([https://ncithesaurus.nci.nih.gov](https://ncithesaurus.nci.nih.gov))
+- **ClinicalTrials.gov**: NLM Public Domain ([https://clinicaltrials.gov](https://clinicaltrials.gov))
+- **CIViC**: CC0 1.0 Universal ([https://civicdb.org](https://civicdb.org))
+- **Ensembl**: Apache License 2.0 ([https://www.ensembl.org](https://www.ensembl.org))
+
+For full source-by-source licensing details, see [https://dgidb.org/sources](https://dgidb.org/sources).
+

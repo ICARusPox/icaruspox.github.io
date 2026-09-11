@@ -263,6 +263,7 @@ function getProcessedGeneList() {
         return {
             gene: g.gene,
             category: g.category,
+            cellCount: g.cellCount,
             earlyIntensity: earlyInt,
             lateIntensity: lateInt,
             earlyDirection: earlyDirection,
@@ -356,7 +357,7 @@ function renderTable(displayData) {
 
     if (displayData.length === 0) {
         const tr = document.createElement('tr');
-        tr.innerHTML = `<td colspan="5" style="text-align: center; color: var(--text-muted); padding: 24px;">No matching genes found</td>`;
+        tr.innerHTML = `<td colspan="6" style="text-align: center; color: var(--text-muted); padding: 24px;">No matching genes found</td>`;
         tableBody.appendChild(tr);
         return;
     }
@@ -376,6 +377,7 @@ function renderTable(displayData) {
 
         tr.innerHTML = `
             <td style="font-weight: 600;">${d.gene}</td>
+            <td>${d.cellCount.toFixed(3)}</td>
             <td class="${earlyClass}">${d.earlyIntensity.toFixed(3)}</td>
             <td class="${lateClass}">${d.lateIntensity.toFixed(3)}</td>
             <td>
@@ -800,7 +802,7 @@ function renderSVGAgentChat(originX, originY, width, height) {
     let s = `  <!-- Agent Chat Section -->\n`;
     s += `  <g transform="translate(${originX}, ${originY})">\n`;
     s += `    <rect width="${width}" height="${height}" fill="#ffffff" stroke="#e9ecef" rx="6"/>\n`;
-    
+
     // Header
     s += `    <rect width="${width}" height="36" fill="#f8f9fa" stroke="#e9ecef" rx="6"/>\n`;
     s += `    <text x="16" y="23" font-size="13" font-weight="bold" fill="#1c7ed6">🤖 Bioinformatics Agent Chat Transcript</text>\n`;
@@ -820,7 +822,7 @@ function renderSVGAgentChat(originX, originY, width, height) {
         if (currY > height - 60) return;
         const isUser = el.classList.contains('user-msg');
         const headerText = el.querySelector('.msg-header')?.textContent || (isUser ? '👤 Researcher' : '🤖 Agent');
-        
+
         const bodyText = el.querySelector('.msg-body')?.innerText || el.textContent || '';
         const lines = wrapTextForSVG(bodyText, isUser ? 55 : 68);
         const displayLines = lines.slice(0, 10);
@@ -835,7 +837,7 @@ function renderSVGAgentChat(originX, originY, width, height) {
         s += `    <g transform="translate(${bubbleX}, ${currY})">\n`;
         s += `      <rect width="${bubbleWidth}" height="${bubbleHeight}" fill="${bgCol}" stroke="${borderCol}" rx="6"/>\n`;
         s += `      <text x="12" y="16" font-size="10" font-weight="bold" fill="${isUser ? '#1971c2' : '#6c757d'}">${escapeXML(headerText)}</text>\n`;
-        
+
         displayLines.forEach((line, lineIdx) => {
             s += `      <text x="12" y="${32 + lineIdx * 15}" font-size="11" fill="${textCol}">${escapeXML(line)}</text>\n`;
         });
@@ -1024,7 +1026,7 @@ function saveAgentCredentials() {
     try {
         const saved = localStorage.getItem('icaruspox_agent_config');
         if (saved) config = JSON.parse(saved);
-    } catch (e) {}
+    } catch (e) { }
 
     config.activeProvider = activeProv;
     if (!config.providers) config.providers = {};
@@ -1152,7 +1154,7 @@ async function generateAgentResponse(userPrompt) {
                     if (provData.apiKey) apiKey = provData.apiKey.trim();
                     if (provData.model && !model) model = provData.model;
                 }
-            } catch (e) {}
+            } catch (e) { }
         }
     }
 
@@ -1347,8 +1349,8 @@ function buildDataContext() {
     const topAnti = sorted.filter(d => d.lateDirection === 'anti-viral' || d.earlyDirection === 'anti-viral').slice(0, 10);
 
     return `- Displayed Subset: ${totalCount.toLocaleString()} genes (${refinementMode} mode)
-- Top Pro-Viral Candidates: ${topPro.map(g => `${g.gene} [Early:${g.earlyIntensity.toFixed(2)}, Late:${g.lateIntensity.toFixed(2)}, Cat:${g.category}]`).join('; ')}
-- Top Anti-Viral Candidates: ${topAnti.map(g => `${g.gene} [Early:${g.earlyIntensity.toFixed(2)}, Late:${g.lateIntensity.toFixed(2)}, Cat:${g.category}]`).join('; ')}`;
+- Top Pro-Viral Candidates: ${topPro.map(g => `${g.gene} [Early:${g.earlyIntensity.toFixed(2)}, Late:${g.lateIntensity.toFixed(2)}, Cell Count:${g.cellCount.toFixed(3)}, Cat:${g.category}]`).join('; ')}
+- Top Anti-Viral Candidates: ${topAnti.map(g => `${g.gene} [Early:${g.earlyIntensity.toFixed(2)}, Late:${g.lateIntensity.toFixed(2)}, Cell Count:${g.cellCount.toFixed(3)}, Cat:${g.category}]`).join('; ')}`;
 }
 
 function generateLocalBioinformaticsResponse(userPrompt) {

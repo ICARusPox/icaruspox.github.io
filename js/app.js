@@ -264,6 +264,10 @@ function getProcessedGeneList() {
             gene: g.gene,
             category: g.category,
             cellCount: g.cellCount,
+            earlyRefined: g.earlyRefined,
+            earlyUnrefined: g.earlyUnrefined,
+            lateRefined: g.lateRefined,
+            lateUnrefined: g.lateUnrefined,
             earlyIntensity: earlyInt,
             lateIntensity: lateInt,
             earlyDirection: earlyDirection,
@@ -1349,8 +1353,8 @@ function buildDataContext() {
     const topAnti = sorted.filter(d => d.lateDirection === 'anti-viral' || d.earlyDirection === 'anti-viral').slice(0, 10);
 
     return `- Displayed Subset: ${totalCount.toLocaleString()} genes (${refinementMode} mode)
-- Top Pro-Viral Candidates: ${topPro.map(g => `${g.gene} [Early:${g.earlyIntensity.toFixed(2)}, Late:${g.lateIntensity.toFixed(2)}, Cell Count:${g.cellCount.toFixed(3)}, Cat:${g.category}]`).join('; ')}
-- Top Anti-Viral Candidates: ${topAnti.map(g => `${g.gene} [Early:${g.earlyIntensity.toFixed(2)}, Late:${g.lateIntensity.toFixed(2)}, Cell Count:${g.cellCount.toFixed(3)}, Cat:${g.category}]`).join('; ')}`;
+- Top Pro-Viral Candidates: ${topPro.map(g => `${g.gene} [Early Refined:${g.earlyRefined.toFixed(2)}, Early Unrefined:${g.earlyUnrefined.toFixed(2)}, Late Refined:${g.lateRefined.toFixed(2)}, Late Unrefined:${g.lateUnrefined.toFixed(2)}, Cell Count:${g.cellCount.toFixed(3)}, Cat:${g.category}]`).join('; ')}
+- Top Anti-Viral Candidates: ${topAnti.map(g => `${g.gene} [Early Refined:${g.earlyRefined.toFixed(2)}, Early Unrefined:${g.earlyUnrefined.toFixed(2)}, Late Refined:${g.lateRefined.toFixed(2)}, Late Unrefined:${g.lateUnrefined.toFixed(2)}, Cell Count:${g.cellCount.toFixed(3)}, Cat:${g.category}]`).join('; ')}`;
 }
 
 function generateLocalBioinformaticsResponse(userPrompt) {
